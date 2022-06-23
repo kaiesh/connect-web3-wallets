@@ -223,7 +223,10 @@
    walletconnect: {
      enable: function(network_id){
        return new Promise((resolve, reject) => {
-         if (KV.rpc_url[network_id] == null) reject({"code": -1, "debug": "Invalid RPC url for this network. You might need an Infura ID for Wallet Connect to work on this network.\n\nUse the function KV.set_infuraID(str) to set your Infura ID before invoking this method."});
+         if (KV.rpc_url[network_id] == null){
+           reject({"code": -1, "debug": "Invalid RPC url for this network. You might need an Infura ID for Wallet Connect to work on this network.\n\nUse the function KV.set_infuraID(str) to set your Infura ID before invoking this method."});
+           return;
+         }
          KV.wallet.walletconnect._provider = new WalletConnectProvider.default({
            infuraId: KV._infuraID,
            rpc: KV.rpc_url,
