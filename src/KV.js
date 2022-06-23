@@ -94,7 +94,7 @@
      }
    });
  };
- //WalletConnect requires an InfuraID, so this must be set before it can be used
+ //WalletConnect requires an InfuraID for ETH networks, so this must be set before it can be used
  KV.set_infuraID = function(infuraID){
    KV._infuraID = infuraID;
    KV.rpc_url[1] = "https://mainnet.infura.io/v3/"+infuraID;
@@ -103,11 +103,10 @@
  }
  //Inspect all known window properties to look for various wallets
  KV.get_available_providers = function(){
-   //walletconnect will be available after the user sets an infura ID
+   //walletconnect will always be available, but will not function for ETH networks unless an infura ID is present
    let provs = [];
-   if (typeof KV._infuraID == "string"){
-     provs.push("walletconnect");
-   }
+   provs.push("walletconnect");
+
    //Look for metamask
    if (typeof window.ethereum == "object" && window.ethereum.isMetaMask){
      provs.push("metamask");
@@ -224,10 +223,11 @@
    walletconnect: {
      enable: function(network_id){
        return new Promise((resolve, reject) => {
-         if (typeof KV._infuraID != "string") reject({"code": -1, "debug": "Invalid Infura ID. A valid Infura ID is required for Wallet Connect.\n\nUse the function KV.set_infuraID(str) to set your Infura ID before invoking this method."});
+         if (KV.rpc_url[network_id] == null) reject({"code": -1, "debug": "Invalid RPC url for this network. You might need an Infura ID for Wallet Connect to work on this network.\n\nUse the function KV.set_infuraID(str) to set your Infura ID before invoking this method."});
          KV.wallet.walletconnect._provider = new WalletConnectProvider.default({
            infuraId: KV._infuraID,
-           rpc: KV.rpc_url
+           rpc: KV.rpc_url,
+           chainId: network_id
          });
          KV.wallet.walletconnect._provider.chainId = network_id;
          KV.wallet.walletconnect._provider.enable().then(function(res){
