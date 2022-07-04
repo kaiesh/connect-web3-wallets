@@ -58,6 +58,7 @@
    network_humannames:{
      1: "Ethereum Mainnet",
      3: "Ethereum Ropsten",
+     5: "Ethereum Goerli",
      42: "Ethereum Kovan",
      56: "Binance Smart Chain",
      97: "Binance Smart Chain Test"
