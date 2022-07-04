@@ -42,6 +42,7 @@
    rpc_url: {
      1: null,
      3: null,
+     5: null,
      42: null,
      56: 'https://bsc-dataseed.binance.org/',
      97: 'https://data-seed-prebsc-1-s1.binance.org:8545/'
@@ -49,6 +50,7 @@
    rpc_codes:{
      "ETH_MAINNET": 1,
      "ETH_ROPSTEN": 3,
+     "ETH_GORLI": 5,
      "ETH_KOVAN": 42,
      "BSC_MAINNET": 56,
      "BSC_TESTNET": 97
@@ -99,6 +101,7 @@
    KV._infuraID = infuraID;
    KV.rpc_url[1] = "https://mainnet.infura.io/v3/"+infuraID;
    KV.rpc_url[3] = "https://ropsten.infura.io/v3/"+infuraID;
+   KV.rpc_url[5] = "https://goerli.infura.io/v3/"+infuraID;
    KV.rpc_url[42] = "https://kovan.infura.io/v3/"+infuraID;
  }
  //Inspect all known window properties to look for various wallets
