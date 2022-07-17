@@ -66,13 +66,18 @@
  };
 //Init sequence to ensure all dependencies are available before attempting
 //wallet connectivity
- KV.init = function(addn_scripts){
+ KV.init = function(addn_scripts, overwrite_defaults){
    if (KV._init_complete) return new Promise((resolve) => { resolve(); });
    return new Promise((resolve, reject) => {
      try{
        let loaded = 0;
        let default_list = ["https://cdn.kaiesh.com/js/web3_3.0.0-rc.5.min.js", "https://cdn.kaiesh.com/js/walletconnect_1.7.1.min.js"]; //['https://cdnjs.cloudflare.com/ajax/libs/web3/3.0.0-rc.5/web3.min.js',"https://unpkg.com/@walletconnect/web3-provider@1.7.1/dist/umd/index.min.js"];
-       let script_list = Array.isArray(addn_scripts) ? default_list.concat(addn_scripts) : default_list;
+       if (typeof overwrite_defaults == "string"){
+         for (let i=0; i < default_list.length; i++){
+           default_list[i] = default_list[i].replace("https://cdn.kaiesh.com/", overwrite_defaults);
+         }
+       }
+       let script_list = Array.isArray(addn_scripts) ? (typeof overwrite_defaults == "boolean" && overwrite_defaults ? addn_scripts : default_list.concat(addn_scripts)) : default_list;
        let count_load = function(){
          loaded++;
          if (loaded >= script_list.length){
