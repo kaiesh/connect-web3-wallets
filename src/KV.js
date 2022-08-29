@@ -45,7 +45,9 @@
      5: null,
      42: null,
      56: 'https://bsc-dataseed.binance.org/',
-     97: 'https://data-seed-prebsc-1-s1.binance.org:8545/'
+     97: 'https://data-seed-prebsc-1-s1.binance.org:8545/',
+     137: null,
+     80001: null
    },
    rpc_codes:{
      "ETH_MAINNET": 1,
@@ -53,7 +55,9 @@
      "ETH_GORLI": 5,
      "ETH_KOVAN": 42,
      "BSC_MAINNET": 56,
-     "BSC_TESTNET": 97
+     "BSC_TESTNET": 97,
+     "MATIC_MAINNET": 137,
+     "MATIC_MUMBAI": 80001
    },
    network_humannames:{
      1: "Ethereum Mainnet",
@@ -61,7 +65,29 @@
      5: "Ethereum Goerli",
      42: "Ethereum Kovan",
      56: "Binance Smart Chain",
-     97: "Binance Smart Chain Test"
+     97: "Binance Smart Chain Test",
+     137: "Polygon Mainnet",
+     80001: "Polygon Mumbai Testnet"
+   },
+   block_explorers:{
+     1: "https://etherscan.io",
+     3: "https://ropsten.etherscan.io",
+     5: "https://goerli.etherscan.io",
+     42: "https://kovan.etherscan.io",
+     56: "https://bscscan.com",
+     97: "https://testnet.bscscan.com",
+     137: "https://polygonscan.com",
+     80001: "https://mumbai.polygonscan.com"
+   },
+   network_currency: {
+     1: {name: "Ethereum", symbol: "ETH", decimals: 18},
+     3: {name: "Ethereum", symbol: "ETH", decimals: 18},
+     5: {name: "Ethereum", symbol: "ETH", decimals: 18},
+     42: {name: "Ethereum", symbol: "ETH", decimals: 18},
+     56: {name: "BNB", symbol: "BNB", decimals: 8},
+     97: {name: "tBNB", symbol: "tBNB", decimals: 8},
+     137: {name: "MATIC", symbol: "MATIC", decimals: 18},
+     80001: {name: "tMATIC", symbol: "tMATIC", decimals: 18}
    }
  };
 //Init sequence to ensure all dependencies are available before attempting
@@ -109,6 +135,8 @@
    KV.rpc_url[3] = "https://ropsten.infura.io/v3/"+infuraID;
    KV.rpc_url[5] = "https://goerli.infura.io/v3/"+infuraID;
    KV.rpc_url[42] = "https://kovan.infura.io/v3/"+infuraID;
+   KV.rpc_url[137] = "https://polygon-mainnet.infura.io/v3/"+infuraID;
+   KV.rpc_url[80001] = "https://polygon-mumbai.infura.io/v3/"+infuraID;
  }
  //Inspect all known window properties to look for various wallets
  KV.get_available_providers = function(){
@@ -292,7 +320,13 @@
                break;
              }
            }
-           KV.wallet.coinbasewallet._provider.request({ method: 'wallet_switchEthereumChain', params:[{chainId: '0x'+Number(network_id).toString(16)}]}).then(function(nres){
+           KV.wallet.coinbasewallet._provider.request({ method: 'wallet_addEthereumChain', params:[{
+             chainId: '0x'+Number(network_id).toString(16),
+             blockExplorerUrls: [KV.block_explorers[network_id]],
+             chainName: KV.network_humannames[network_id],
+             nativeCurrency: KV.network_currency[network_id],
+             rpcUrls:[KV.block_explorers[network_id]]
+           }]}).then(function(nres){
              console.log(nres);
              KV.wallet.coinbasewallet._provider.enable().then(
                function (enableres){
@@ -335,7 +369,13 @@
            }
            //Newer implementation
            KV.wallet.metamask._provider = mm;
-           KV.wallet.metamask._provider.request({ method: 'wallet_switchEthereumChain', params:[{chainId: '0x'+Number(network_id).toString(16)}]}).then(function(nres){
+           KV.wallet.metamask._provider.request({ method: 'wallet_addEthereumChain', params:[{
+             chainId: '0x'+Number(network_id).toString(16),
+             blockExplorerUrls: [KV.block_explorers[network_id]],
+             chainName: KV.network_humannames[network_id],
+             nativeCurrency: KV.network_currency[network_id],
+             rpcUrls:[KV.block_explorers[network_id]]
+           }]}).then(function(nres){
              KV.wallet.metamask._provider.enable().then(
                function(enableres){
                  KV.wallet.metamask._web3 = new Web3(window.ethereum);
@@ -405,7 +445,7 @@
    this.contract_address = addr;
  };
 
- KV.Contract.prototype.load = function(contract_url){
+ KV.Contract.prototype.load = function(contract_url, readonly_from_chain_id){
    var ct = this;
    return new Promise((resolve, reject) => {
      ajax([], {
@@ -413,9 +453,17 @@
        "method": "GET"
      })
      .then(function(res){
-       let w3 = KV.wallet.web3();
-       ct.w3contract = new w3.eth.Contract(res, ct.contract_address);
-       resolve();
+       if (readonly_from_chain_id > 0){
+         //without using the user's wallet managed connection, try to read directly from the chain's gateway
+         let roProv = new Web3.providers.HttpProvider(KV.rpc_url[readonly_from_chain_id]);
+         let roWeb3 = new Web3(roProv);
+         ct.w3contract = new roWeb3.eth.Contract(res, ct.contract_address);
+         resolve(ct);
+       }else{
+         let w3 = KV.wallet.web3();
+         ct.w3contract = new w3.eth.Contract(res, ct.contract_address);
+         resolve(ct);
+       }
      })
      .catch(function(err){
        reject(err);
