@@ -24,17 +24,32 @@
 //Function to add elements to the DOM
  var shield = shield || function ( s, h, i, e, l, d ){ var g = document.createElement(e); g.src = s; if (typeof h=="function") g.onload=h; g.async="async"; if (0) { g.integrity = d; g.crossorigin="anonymous"; }document.getElementsByTagName(i)[l].appendChild(g);};
 //Function to support toast style messages (CSS added seperately)
- var showToast = showToast || function(msg, classname){
-   let rand_id = Math.floor(Math.random()*1000);
-   let t = document.createElement("DIV");
-   t.id = "toast"+rand_id;
-   t.innerHTML = msg;
-   t.className = "toast "+classname;
-   document.getElementsByTagName("body")[0].appendChild(t);
-   setTimeout(function(){
-     t.parentElement.removeChild(t);
-   }, 5000);
- };
+	var showToast = function(msg, classname){
+		let all_toasts = document.getElementsByClassName("toast");
+		let top_position;
+		if (all_toasts.length > 0){
+			top_position = (all_toasts[all_toasts.length - 1].offsetTop + all_toasts[all_toasts.length - 1].offsetHeight + 25)+"px";
+		}
+		let rand_id = Math.floor(Math.random()*1000);
+		let t = document.createElement("DIV");
+		t.id = "toast"+rand_id;
+		t.innerHTML = msg;
+		t.className = "toast "+classname;
+		if (top_position) t.style.top = top_position;
+
+		document.getElementsByTagName("body")[0].appendChild(t);
+		t.addEventListener("mouseover", function(){
+			t.classList.add("animpaused");
+		});
+		t.addEventListener("mouseout", function(){
+			t.classList.remove("animpaused");
+		});
+		t.addEventListener("animationend", function(ev){
+			if (ev.animationName == "slide-in"){
+				t.parentElement.removeChild(t);
+			}
+		});
+	};
  //Define basic properties to allow wallet connectivity to be managed
  var KV = KV || {
    _infuraID: null,
