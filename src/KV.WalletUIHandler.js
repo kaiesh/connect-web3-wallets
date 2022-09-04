@@ -75,44 +75,7 @@ KV.WalletUIHandler = function(params){
             KV.set_provider("walletconnect");
             break;
         }
-        KV.wallet.enable(params.web3network).then(function(res){
-          KV.wallet.web3().eth.getAccounts().then(function(wallets){
-            thi._connect_string = params.btn_connect.innerHTML; //save the current button string
-            thi._wallet = wallets;
-            thi._trigger_callback("wallet_connected", wallets);
-            params.btn_connect.innerHTML = params.btn_disconnect_label;
-            thi._modaldiv.parentElement.removeChild(thi._modaldiv);
-            thi._modaldiv = false;
-            KV.wallet.on_disconnect(function(wallet_disconnect_data){
-              params.btn_connect.innerHTML = thi._connect_string;
-              params.btn_connect.disabled = false;
-              delete thi._wallet;
-              thi._trigger_callback("wallet_disconnected", wallet_disconnect_data);
-            });
-            KV.wallet.on_session_change(function(sess_info){
-              if (sess_info.length == 0){
-                //mark it as disconnected
-                KV.wallet.disconnect();
-                params.btn_connect.innerHTML = thi._connect_string;
-                params.btn_connect.disabled = false;
-                delete thi._wallet;
-                thi._trigger_callback("wallet_disconnected", "user disconnected");
-              }else{
-                //user has changed wallet
-                thi._trigger_callback("wallet_connected", sess_info);
-              }
-            });
-            params.btn_connect.disabled = false;
-            thi._trigger_callback("modal_closed", true);
-          })
-        }).catch(function(err){
-          for (let i=0; i < btnarr.length; i++){
-            btnarr[i].classList.remove("selected");
-            btnarr[i].disabled = false;
-          }
-          thi._trigger_callback("wallet_error", err);
-          params.btn_connect.disabled = false;
-        });
+        thi._init_connection(params);
       };
 
       thi._trigger_callback("btnconnect_clicked", "connect");
@@ -134,6 +97,11 @@ KV.WalletUIHandler = function(params){
       params.btn_connect.disabled = false;
     }
   });
+
+  //The KV.js init method will inspect for existing wallet bindings, if they exist, it will return "ok" which will be inspected here
+  if (params.wallet_ready == "ok"){
+    this._init_connection(params);
+  }
 };
 
 KV.WalletUIHandler.prototype._trigger_callback = function(ev, data){
@@ -175,3 +143,46 @@ KV.WalletUIHandler.prototype.off = function(ev, id){
     this.handlers[ev][id - 1] = null;
   }
 };
+
+KV.WalletUIHandler.prototype._init_connection = function(params){
+  var thi = this;
+  KV.wallet.enable(params.web3network).then(function(res){
+    KV.wallet.web3().eth.getAccounts().then(function(wallets){
+      thi._connect_string = params.btn_connect.innerHTML; //save the current button string
+      thi._wallet = wallets;
+      thi._trigger_callback("wallet_connected", wallets);
+      params.btn_connect.innerHTML = params.btn_disconnect_label;
+      thi._modaldiv.parentElement.removeChild(thi._modaldiv);
+      thi._modaldiv = false;
+      KV.wallet.on_disconnect(function(wallet_disconnect_data){
+        params.btn_connect.innerHTML = thi._connect_string;
+        params.btn_connect.disabled = false;
+        delete thi._wallet;
+        thi._trigger_callback("wallet_disconnected", wallet_disconnect_data);
+      });
+      KV.wallet.on_session_change(function(sess_info){
+        if (sess_info.length == 0){
+          //mark it as disconnected
+          KV.wallet.disconnect();
+          params.btn_connect.innerHTML = thi._connect_string;
+          params.btn_connect.disabled = false;
+          delete thi._wallet;
+          thi._trigger_callback("wallet_disconnected", "user disconnected");
+        }else{
+          //user has changed wallet
+          thi._trigger_callback("wallet_connected", sess_info);
+        }
+      });
+      params.btn_connect.disabled = false;
+      thi._trigger_callback("modal_closed", true);
+    })
+  }).catch(function(err){
+    console.error(err);
+    for (let i=0; i < btnarr.length; i++){
+      btnarr[i].classList.remove("selected");
+      btnarr[i].disabled = false;
+    }
+    thi._trigger_callback("wallet_error", err);
+    params.btn_connect.disabled = false;
+  });
+}
