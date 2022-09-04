@@ -123,8 +123,8 @@
          loaded++;
          if (loaded >= script_list.length){
            KV._init_complete = true;
-           if (localStorage.getItem("chainId") && localStorage.getItem("provider")){
-             KV._provider_name = localStorage.getItem("provider");
+           if (localStorage.getItem("chainId") && localStorage.getItem("provider_name")){
+             KV._provider_name = localStorage.getItem("provider_name");
              KV.wallet.enable(localStorage.getItem("chainId")).then(function (res){
                resolve({"init": "ok", "wallet": "ok"});
              }).catch(function (err){
