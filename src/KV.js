@@ -94,6 +94,17 @@
      137: "https://polygonscan.com",
      80001: "https://mumbai.polygonscan.com"
    },
+   native_rpcs:{
+     1: "https://mainnet.infura.io/v3/",
+     3: "https://ropsten.infura.io/v3/",
+     4: "https://rinkeby.infura.io/v3/",
+     5: "https://goerli.infura.io/v3/",
+     42: "https://kovan.infura.io/v3/",
+     56: "https://bsc-dataseed.binance.org/",
+     97: "https://data-seed-prebsc-1-s1.binance.org:8545",
+     137: "https://polygon-rpc.com",
+     80001: "https://rpc-mumbai.maticvigil.com"
+   },
    network_currency: {
      1: {name: "Ethereum", symbol: "ETH", decimals: 18},
      3: {name: "Ethereum", symbol: "ETH", decimals: 18},
@@ -102,7 +113,7 @@
      56: {name: "BNB", symbol: "BNB", decimals: 8},
      97: {name: "tBNB", symbol: "tBNB", decimals: 8},
      137: {name: "MATIC", symbol: "MATIC", decimals: 18},
-     80001: {name: "tMATIC", symbol: "tMATIC", decimals: 18}
+     80001: {name: "MATIC", symbol: "MATIC", decimals: 18}
    }
  };
 //Init sequence to ensure all dependencies are available before attempting
@@ -340,7 +351,7 @@
              blockExplorerUrls: [KV.block_explorers[network_id]],
              chainName: KV.network_humannames[network_id],
              nativeCurrency: KV.network_currency[network_id],
-             rpcUrls:[KV.block_explorers[network_id]]
+             rpcUrls:[KV.native_rpcs[network_id]]
            }]}).then(function(nres){
              console.log(nres);
              KV.wallet.coinbasewallet._provider.enable().then(
@@ -384,13 +395,19 @@
            }
            //Newer implementation
            KV.wallet.metamask._provider = mm;
-           KV.wallet.metamask._provider.request({ method: 'wallet_addEthereumChain', params:[{
-             chainId: '0x'+Number(network_id).toString(16),
-             blockExplorerUrls: [KV.block_explorers[network_id]],
-             chainName: KV.network_humannames[network_id],
-             nativeCurrency: KV.network_currency[network_id],
-             rpcUrls:[KV.block_explorers[network_id]]
-           }]}).then(function(nres){
+           let request;
+           if (network_id != 1){
+             request = { method: 'wallet_addEthereumChain', params:[{
+               chainId: '0x'+Number(network_id).toString(16),
+               blockExplorerUrls: [KV.block_explorers[network_id]],
+               chainName: KV.network_humannames[network_id],
+               nativeCurrency: KV.network_currency[network_id],
+               rpcUrls:[KV.native_rpcs[network_id]]
+             }]};
+           }else{
+             request = { method: 'wallet_switchEthereumChain', params:[{chainId: '0x'+Number(network_id).toString(16)}]};
+           }
+           let _connect_wallet = function (nres){
              KV.wallet.metamask._provider.enable().then(
                function(enableres){
                  KV.wallet.metamask._web3 = new Web3(window.ethereum);
@@ -399,16 +416,23 @@
                  KV.wallet.metamask._provider.on("accountsChanged", KV.wallet._process_session_update);
                  KV.wallet._process_connect(enableres);
                  resolve(enableres);
-               })
-               .catch(function(err){
-                 //user rejected network change
-                 reject(err);
-               });
-             }
-           )
+               }
+             )
+             .catch(function(err){
+               //user rejected network change
+               reject(err);
+             });
+           };
+           KV.wallet.metamask._provider.request(request).then(_connect_wallet)
            .catch(
              function(err){
-               reject(err);
+               if (err.code == -32602){
+                 //network already added, but with slightly different profile
+                 request = { method: 'wallet_switchEthereumChain', params:[{chainId: '0x'+Number(network_id).toString(16)}]};
+                 KV.wallet.metamask._provider.request(request).then(_connect_wallet).catch(reject);
+               }else{
+                 reject(err);
+               }
              }
            )
          }else if (window.web3){
