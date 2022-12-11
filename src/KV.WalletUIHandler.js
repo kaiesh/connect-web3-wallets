@@ -41,13 +41,13 @@ KV.WalletUIHandler = function(params){
           wallet_options_ml += "<button class='kvwalletbtn' id='kvwalletmodal_walletconnect_btn'>WalletConnect</button>";
           break;
           case "metamask":
-          wallet_options_ml += "<button class='kvwalletbtn' id='kvwalletmodal_metamask_btn'>Metamask</button>";
+          wallet_options_ml += "<button class='kvwalletbtn' id='kvwalletmodal_metamask_btn'>MetaMask</button>";
           break;
           case "binancewallet":
-          wallet_options_ml += "<button class='kvwalletbtn' id='kvwalletmodal_binance_btn'>Binance</button>"
+          wallet_options_ml += "<button class='kvwalletbtn' id='kvwalletmodal_binance_btn'>Binance</button>";
           break;
           case "coinbasewallet":
-          wallet_options_ml += "<button class='kvwalletbtn' id='kvwalletmodal_coinbase_btn'>Coinbase</button>"
+          wallet_options_ml += "<button class='kvwalletbtn' id='kvwalletmodal_coinbase_btn'>Coinbase</button>";
           break;
         }
       }
@@ -60,8 +60,8 @@ KV.WalletUIHandler = function(params){
           btnarr[i].disabled = true;
         }
         ev.target.classList.add("selected");
-        thi._trigger_callback("wallet_connecting", ev.target.id);
-        switch (ev.target.id){
+        thi._trigger_callback("wallet_connecting", ev.currentTarget.id);
+        switch (ev.currentTarget.id){
           case "kvwalletmodal_binance_btn":
             KV.set_provider("binancewallet");
             break;
@@ -73,6 +73,9 @@ KV.WalletUIHandler = function(params){
               break;
           case "kvwalletmodal_walletconnect_btn":
             KV.set_provider("walletconnect");
+            break;
+          default:
+            console.error("NO TARGET ID FOUND: "+ev.currentTarget.id, ev.currentTarget);
             break;
         }
         thi._init_connection(params);
@@ -98,7 +101,7 @@ KV.WalletUIHandler = function(params){
     }
   });
 
-  //The KV.js init method will inspect for existing wallet bindings, if they exist, it will return "ok" which will be inspected here
+  //The KV.js init method will inspect for existing wallet bindings, if they exist, it will return "ok" here
   if (params.wallet_ready == "ok"){
     this._init_connection(params);
   }
@@ -146,14 +149,17 @@ KV.WalletUIHandler.prototype.off = function(ev, id){
 
 KV.WalletUIHandler.prototype._init_connection = function(params){
   var thi = this;
+  let btnarr = document.getElementsByClassName("kvwalletbtn");
   KV.wallet.enable(params.web3network).then(function(res){
     KV.wallet.web3().eth.getAccounts().then(function(wallets){
       thi._connect_string = params.btn_connect.innerHTML; //save the current button string
       thi._wallet = wallets;
       thi._trigger_callback("wallet_connected", wallets);
       params.btn_connect.innerHTML = params.btn_disconnect_label;
-      thi._modaldiv.parentElement.removeChild(thi._modaldiv);
-      thi._modaldiv = false;
+      if (typeof thi._modaldiv == "object"){
+        thi._modaldiv.parentElement.removeChild(thi._modaldiv);
+        thi._modaldiv = false;
+      }
       KV.wallet.on_disconnect(function(wallet_disconnect_data){
         params.btn_connect.innerHTML = thi._connect_string;
         params.btn_connect.disabled = false;
