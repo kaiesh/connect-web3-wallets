@@ -278,7 +278,7 @@
            setTimeout( function(){ handler(p); }, 10);
          })(KV.wallet._hooks.connect[i])
        }else{
-         console.error("Disconnection hooks", KV.wallet._hooks.connect[i], "This is not a function");
+         console.error("Connection hooks", KV.wallet._hooks.connect[i], "This is not a function");
        }
      }
    },
