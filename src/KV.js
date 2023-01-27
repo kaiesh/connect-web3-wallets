@@ -500,9 +500,13 @@
         resolve(ct);
       }
     };
+    let parsed_ce = null;
+    try{
+      parsed_ce = JSON.parse(contract_entry);
+    }catch (e){  }
     
-    if (typeof contract_entry == "string" && contract_entry.substring(0,4) != "http" && Array.isArray(JSON.parse(contract_entry))){
-      parse_ct(JSON.parse(contract_entry));
+    if (typeof contract_entry == "string" && contract_entry.substring(0,4) != "http" && Array.isArray(parsed_ce)){
+      parse_ct(parsed_ce);
     }else if (Array.isArray(contract_entry)){
       parse_ct(contract_entry);
     }else{
