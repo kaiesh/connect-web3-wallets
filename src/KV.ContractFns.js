@@ -41,13 +41,16 @@ KV.ContractFns.set_abi_apikey = function (chainId, apikey){
 /**
  * Loads a W3 contract into a variable, and retrieves the necessary ABI to
  * support execution. If the ABI neds to come from a specific location
- * then this can also be provided
+ * then this can also be provided.
+ * 
+ * If the ABI is already available as an in-memory array, then this can be
+ * used as well.
  **/
 KV.ContractFns.prepare_contract = function(props){
   // short_name, contract_address, contract_abi, readonly_from_chain_id
   return new Promise((resolve, reject)=>{
     KV.ContractFns.cts[props.short_name] = new KV.Contract(props.contract_address);
-    KV.ContractFns.cts[props.short_name].load(typeof props.contract_abi == "string" ? props.contract_abi : KV.ContractFns.get_abi_url(props.contract_address), props.readonly_from_chain_id).then(
+    KV.ContractFns.cts[props.short_name].load(typeof props.contract_abi == "string" || Array.isArray(props.contract_abi) ? props.contract_abi : KV.ContractFns.get_abi_url(props.contract_address), props.readonly_from_chain_id).then(
       function (ct){
         KV.ContractFns._ct_prepared(props.short_name);
         resolve(ct);

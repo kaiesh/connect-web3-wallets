@@ -484,28 +484,36 @@
    this.contract_address = addr;
  };
 
- KV.Contract.prototype.load = function(contract_url, readonly_from_chain_id){
-   var ct = this;
-   return new Promise((resolve, reject) => {
-     ajax([], {
-       "api_url": typeof contract_url == "string" ? contract_url : "/rpc-data/"+ct.contract_address+".json",
-       "method": "GET"
-     })
-     .then(function(res){
-       if (readonly_from_chain_id > 0){
-         //without using the user's wallet managed connection, try to read directly from the chain's gateway
-         let roProv = new Web3.providers.HttpProvider(KV.rpc_url[readonly_from_chain_id]);
-         let roWeb3 = new Web3(roProv);
-         ct.w3contract = new roWeb3.eth.Contract(res, ct.contract_address);
-         resolve(ct);
-       }else{
-         let w3 = KV.wallet.web3();
-         ct.w3contract = new w3.eth.Contract(res, ct.contract_address);
-         resolve(ct);
-       }
-     })
-     .catch(function(err){
-       reject(err);
-     });
-   });
+ KV.Contract.prototype.load = function(contract_entry, readonly_from_chain_id){
+  var ct = this;
+  return new Promise((resolve, reject) => {
+    let parse_ct = function(res){
+      if (readonly_from_chain_id > 0){
+        //without using the user's wallet managed connection, try to read directly from the chain's gateway
+        let roProv = new Web3.providers.HttpProvider(KV.rpc_url[readonly_from_chain_id]);
+        let roWeb3 = new Web3(roProv);
+        ct.w3contract = new roWeb3.eth.Contract(res, ct.contract_address);
+        resolve(ct);
+      }else{
+        let w3 = KV.wallet.web3();
+        ct.w3contract = new w3.eth.Contract(res, ct.contract_address);
+        resolve(ct);
+      }
+    };
+    
+    if (typeof contract_entry == "string" && contract_entry.substring(0,4) != "http" && Array.isArray(JSON.parse(contract_entry))){
+      parse_ct(JSON.parse(contract_entry));
+    }else if (Array.isArray(contract_entry)){
+      parse_ct(contract_entry);
+    }else{
+      ajax([], {
+        "api_url": typeof contract_entry == "string" ? contract_entry : "/rpc-data/"+ct.contract_address+".json",
+        "method": "GET"
+      })
+      .then(parse_ct)
+      .catch(function(err){
+        reject(err);
+      });
+    }
+  });
  };
